@@ -27,6 +27,9 @@ namespace MLRetrainerLib
 
         private CloudBlockBlob _trainingBlob;
 
+        public Dictionary<string, double> lastScores { get; set; }
+        public Dictionary<string, double> retrainedScores { get; set; }
+
         public RetrainerLib(params string[] configs)
         {
             _mlretrainmodelurl   = configs[0];
@@ -38,6 +41,8 @@ namespace MLRetrainerLib
             _mlstoragecontainer  = configs[6];
 
             _storgaeConnectionString = string.Format("DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1}", _mlstoragename, _mlstoragekey);
+
+            lastScores = GetRetrainedResults(); //Set this for retraining so we can compare updated model score
         }
 
         /// <summary>
@@ -265,6 +270,84 @@ namespace MLRetrainerLib
             {
                 throw new Exception(string.Format(CultureInfo.InvariantCulture, "Blob {0} doesn't exist on local system.", rtBlobName));
             }
+        }
+
+
+        /// <summary>
+        /// This method retrives the results of the last model retraining. If there are no existing results (it has never run) then it will return null
+        /// </summary>
+        /// <returns></returns>
+        public Dictionary<string, double> GetRetrainedResults()
+        {
+            string conn = _storgaeConnectionString;
+            Dictionary<string, Double> vals = null;
+            try
+            {
+                var blobClient = CloudStorageAccount.Parse(conn).CreateCloudBlobClient();
+                var container = blobClient.GetContainerReference(_mlstoragecontainer);
+                //container.CreateIfNotExists();
+                var blob = container.GetBlockBlobReference("output1results.csv");
+                if (!blob.Exists()) { return null;  }
+                //blob.DownloadToFile(@"c:\drops\results.csv", FileMode.OpenOrCreate);
+
+                MemoryStream mStream = new MemoryStream();
+                blob.DownloadToStream(mStream);
+
+                string decoded = Encoding.UTF8.GetString(mStream.ToArray());
+
+                vals = ExtractModelValues(decoded);
+                retrainedScores = vals;
+
+                return vals;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public Dictionary<string, Double> ExtractModelValues(string mvalues)
+        {
+            Dictionary<string, Double> vals = new Dictionary<string, double>();
+
+            string[] entries = mvalues.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+            string[] headers = entries[0].Split(',');
+            string[] values = entries[1].Split(',');
+
+            for (int loop = 0; loop < headers.Length; loop++)
+            {
+                vals.Add(headers[loop], Convert.ToDouble(values[loop]));
+            }
+
+            return vals;
+        }
+
+        /// <summary>
+        /// This method will tell you if you should deploy the retrained model. it compares the last known scores with the newest scores
+        /// from retraining. Note that when this class is instantiated, it will attempt to retrieve last results from the configured blob. 
+        /// Thus if there are no existing scores in the blob, it will return TRUE since it assumes no deployed endpoint yet.
+        /// </summary>
+        /// <param name="measuredValue"></param>
+        /// <param name="pctImproveMin">This should be in it's decimal form such as 0.02f for 2% improvement target as an exmaple</param>
+        /// <returns></returns>
+        public bool isUdpateModel(string measuredValue, float pctImproveMin)
+        {
+            if (String.IsNullOrEmpty(measuredValue) || pctImproveMin == 0 || retrainedScores == null)
+            {
+                return false;
+            }
+            if (lastScores == null) { return true;
+            }
+            bool isImproved = false;
+
+            var lastCompareScore = lastScores[measuredValue];
+            var newCompareScore = retrainedScores[measuredValue];
+
+            var improvement = lastCompareScore + (lastCompareScore * pctImproveMin);
+            if (newCompareScore >= improvement) { isImproved = true; }
+
+            return isImproved;
         }
     }
 

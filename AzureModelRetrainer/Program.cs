@@ -29,6 +29,12 @@ namespace AzureModelRetrainer
 
             MLRetrainerLib.RetrainerLib retrainer = new MLRetrainerLib.RetrainerLib(paramList.ToArray());
 
+            Console.WriteLine("Results of last training: ");
+            foreach(var val in retrainer.lastScores)
+            {
+                Console.WriteLine("Rating Name: {0} : Value: {1}", val.Key, val.Value.ToString());
+            }
+
             string jobID = retrainer.UploadRetrainingAsync().Result;
 
             retrainer.StartRetrainingJob(jobID).Wait();
@@ -40,6 +46,10 @@ namespace AzureModelRetrainer
                 status = retrainer.CheckJobStatus(jobID).Result;
                 Console.WriteLine(status.ToString());
             } while (!(status == MLRetrainerLib.BatchScoreStatusCode.Finished));
+
+            Dictionary<string, double> scores = retrainer.GetRetrainedResults();
+
+            if (!retrainer.isUdpateModel("AUC", 0.02f)) { return; }
 
             bool isUpdated = retrainer.UpdateModel(jobID).Result;
             if (isUpdated)

@@ -111,5 +111,29 @@ namespace AzureModelRetrainer.Properties {
                 this["mlstoragecontainer"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("AUC")]
+        public string modelUpdateRefMeasure {
+            get {
+                return ((string)(this["modelUpdateRefMeasure"]));
+            }
+            set {
+                this["modelUpdateRefMeasure"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("2")]
+        public string modelUpdateMinImprovement {
+            get {
+                return ((string)(this["modelUpdateMinImprovement"]));
+            }
+            set {
+                this["modelUpdateMinImprovement"] = value;
+            }
+        }
     }
 }

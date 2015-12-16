@@ -23,5 +23,11 @@
     <Setting Name="mlstoragecontainer" Type="System.String" Scope="User">
       <Value Profile="(Default)">mlretraincontainer</Value>
     </Setting>
+    <Setting Name="modelUpdateRefMeasure" Type="System.String" Scope="User">
+      <Value Profile="(Default)">AUC</Value>
+    </Setting>
+    <Setting Name="modelUpdateMinImprovement" Type="System.String" Scope="User">
+      <Value Profile="(Default)">2</Value>
+    </Setting>
   </Settings>
 </SettingsFile>
