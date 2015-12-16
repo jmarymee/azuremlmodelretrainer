@@ -1,6 +1,8 @@
 C:\Users\jmarymee\Documents\Visual Studio 2015\Projects\azuremlmodelretrainer\AzureModelRetrainer\bin\Debug\AzureModelRetrainer.exe.config
 C:\Users\jmarymee\Documents\Visual Studio 2015\Projects\azuremlmodelretrainer\AzureModelRetrainer\bin\Debug\AzureModelRetrainer.exe
 C:\Users\jmarymee\Documents\Visual Studio 2015\Projects\azuremlmodelretrainer\AzureModelRetrainer\bin\Debug\AzureModelRetrainer.pdb
-C:\Users\jmarymee\Documents\Visual Studio 2015\Projects\azuremlmodelretrainer\AzureModelRetrainer\obj\Debug\AzureModelRetrainer.csprojResolveAssemblyReference.cache
 C:\Users\jmarymee\Documents\Visual Studio 2015\Projects\azuremlmodelretrainer\AzureModelRetrainer\obj\Debug\AzureModelRetrainer.exe
 C:\Users\jmarymee\Documents\Visual Studio 2015\Projects\azuremlmodelretrainer\AzureModelRetrainer\obj\Debug\AzureModelRetrainer.pdb
+C:\Users\jmarymee\Documents\Visual Studio 2015\Projects\azuremlmodelretrainer\AzureModelRetrainer\bin\Debug\MLRetrainerLib.dll
+C:\Users\jmarymee\Documents\Visual Studio 2015\Projects\azuremlmodelretrainer\AzureModelRetrainer\bin\Debug\MLRetrainerLib.pdb
+C:\Users\jmarymee\Documents\Visual Studio 2015\Projects\azuremlmodelretrainer\AzureModelRetrainer\obj\Debug\AzureModelRetrainer.csprojResolveAssemblyReference.cache
