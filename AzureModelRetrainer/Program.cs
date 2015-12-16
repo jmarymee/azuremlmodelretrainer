@@ -26,6 +26,7 @@ namespace AzureModelRetrainer
             paramList.Add(Properties.Settings.Default.mlstoragename);
             paramList.Add(Properties.Settings.Default.mlstoragekey);
             paramList.Add(Properties.Settings.Default.mlstoragecontainer);
+            paramList.Add(Properties.Settings.Default.endpointname);
 
             MLRetrainerLib.RetrainerLib retrainer = new MLRetrainerLib.RetrainerLib(paramList.ToArray());
 
@@ -35,7 +36,7 @@ namespace AzureModelRetrainer
                 Console.WriteLine("Rating Name: {0} : Value: {1}", val.Key, val.Value.ToString());
             }
 
-            string jobID = retrainer.UploadRetrainingAsync().Result;
+            string jobID = retrainer.QueueRetrainingAsync().Result;
 
             retrainer.StartRetrainingJob(jobID).Wait();
 
@@ -49,7 +50,12 @@ namespace AzureModelRetrainer
 
             Dictionary<string, double> scores = retrainer.GetRetrainedResults();
 
-            if (!retrainer.isUdpateModel("AUC", 0.02f)) { return; }
+            if (!retrainer.isUdpateModel("AUC", -0.02f))
+            {
+                Console.WriteLine("No need to update endpoint. Accuracy has not improved. Press a key to end");
+                Console.ReadLine();
+                return;
+            }
 
             bool isUpdated = retrainer.UpdateModel(jobID).Result;
             if (isUpdated)
@@ -60,6 +66,9 @@ namespace AzureModelRetrainer
             {
                 Console.WriteLine("Something went wrong updating the model");
             }
+
+            Console.WriteLine("Process has completed. Press a key to end");
+            Console.ReadLine();
         }
     }
 }

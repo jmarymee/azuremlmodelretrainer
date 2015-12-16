@@ -15,6 +15,10 @@ namespace MLRetrainerLib
 {
     public class RetrainerLib
     {
+        /// <summary>
+        /// This property is the published ML retraing web service. You can find it on the Azure ML Studio page under published web services.
+        /// Be sure to use the one from the training web service versus the scoring web service
+        /// </summary>
         public string _mlretrainmodelurl { get; set; }
         public string _mlretrainerkey { get; set; }
         public string _endpointurl { get; set; }
@@ -22,12 +26,20 @@ namespace MLRetrainerLib
         public string _mlstoragename { get; set; }
         public string _mlstoragekey { get; set; }
         public string _mlstoragecontainer { get; set; }
+        public string _nameOfEndpoint { get; set; } //used to push an updated model to the web endpoint
 
         private string _storgaeConnectionString;
 
         private CloudBlockBlob _trainingBlob;
 
+        /// <summary>
+        /// These are located and stored in this var during object construction for comparison. 
+        /// </summary>
         public Dictionary<string, double> lastScores { get; set; }
+
+        /// <summary>
+        /// This is filled in after we have retrained the model and then placed the values here. Note that after model retraining the old scores are overwritten
+        /// </summary>
         public Dictionary<string, double> retrainedScores { get; set; }
 
         public RetrainerLib(params string[] configs)
@@ -39,28 +51,32 @@ namespace MLRetrainerLib
             _mlstoragename       = configs[4];
             _mlstoragekey        = configs[5];
             _mlstoragecontainer  = configs[6];
+            _nameOfEndpoint       = configs[7];
 
+            //This is used as the general URL for accessing the Azure Storage blobs where the updated iLearner and result scores are stored
             _storgaeConnectionString = string.Format("DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1}", _mlstoragename, _mlstoragekey);
 
             lastScores = GetRetrainedResults(); //Set this for retraining so we can compare updated model score
         }
 
         /// <summary>
-        /// Used to setup the job retraining. You nust receive the jobID and submit to the start method
+        /// Used to setup the job retraining. You nust receive the jobID from this call and submit to the start method. This method only gets retraining 
+        /// ready but it MUST be started with the returned jobID after the sucessful completion of this call
         /// </summary>
         /// <returns>This is a jobID used to then start the retraining job</returns>
-        public async Task<string> UploadRetrainingAsync()
+        public async Task<string> QueueRetrainingAsync()
         {
-            //TODO: need to set this up first
+            //TODO: need to set this up first to support CSV uploads intead of no-input retraining
             //if (_trainingBlob == null) { return null; }
+            //CloudBlockBlob blob = _trainingBlob;
 
             string jobId = null;
 
-            //CloudBlockBlob blob = _trainingBlob;
 
             BatchExecutionRequest request = new BatchExecutionRequest()
             {
 
+                //Only used if uploading a CSV file for retraining instead of using Azure SQL, Storage etc. 
                 //Input = new AzureBlobDataReference()
                 //{
                 //    //ConnectionString = _storgaeConnectionString,
@@ -111,12 +127,16 @@ namespace MLRetrainerLib
                     return null;
                 }
                 jobId = await response.Content.ReadAsAsync<string>(); //Used to reference the job for start and monitoring of completion
-                //Console.WriteLine(string.Format("Job ID: {0}", jobId));
             }
 
             return jobId;
         }
 
+        /// <summary>
+        /// This is used to check the status of a submitted job for model retraining
+        /// </summary>
+        /// <param name="jobId"></param>
+        /// <returns></returns>
         public async Task<BatchScoreStatusCode> CheckJobStatus(string jobId)
         {
             BatchScoreStatus status;
@@ -139,7 +159,11 @@ namespace MLRetrainerLib
             return status.StatusCode;
         }
 
-        //used to begin the retraining. This will need a callback in order to know when we're done and to get the precision results
+        /// <summary>
+        /// Once the job has been queued, this API starts the actual execution of the retraining via a jobID obtained when queueing the job
+        /// </summary>
+        /// <param name="jobId"></param>
+        /// <returns></returns>
         public async Task StartRetrainingJob(string jobId)
         {
             using (HttpClient client = new HttpClient())
@@ -164,7 +188,7 @@ namespace MLRetrainerLib
         /// <param name="sasBlobtoken"></param>
         /// <param name="connStr"></param>
         /// <returns></returns>
-        public async Task<bool> UpdateRetrainedModel(string baseLoc, string relLoc, string sasBlobtoken, string connStr)
+        private async Task<bool> UpdateRetrainedModel(string baseLoc, string relLoc, string sasBlobtoken, string connStr)
         {
             //string apiKey = "DUQquqfOk7Sk21g3K/YigqSdwM7Z4xbs2EYrEXDHNUjiZHLRtKUK72RgCfYIwiLYQJWSB5y7Lp0apfu0tIJnnQ=="; //Trained Model API
             //string apiKey = "Y5kjC3KiFTSn6eg08eCX4SpbgZd6X6Fv2zP5Oa0kIeAH4tKAMKLRBUvlcIqy+05I3DlL0vs2CqUK3NJwIfkn8A=="; //Endpoint API
@@ -175,7 +199,8 @@ namespace MLRetrainerLib
                 Resources = new ResourceLocation[] {
                     new ResourceLocation()
                     {
-                        Name = "Scenario 1 When will a customer return [trained model]",
+                        //Name = "Scenario 1 When will a customer return [trained model]",
+                        Name = _nameOfEndpoint,
                         Location = new AzureBlobDataReference()
                         {
                             BaseLocation = baseLoc,

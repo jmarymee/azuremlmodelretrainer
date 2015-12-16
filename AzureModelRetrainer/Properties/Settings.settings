@@ -29,5 +29,8 @@
     <Setting Name="modelUpdateMinImprovement" Type="System.String" Scope="User">
       <Value Profile="(Default)">2</Value>
     </Setting>
+    <Setting Name="endpointname" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Scenario 1 When will a customer return [trained model]</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

@@ -135,5 +135,17 @@ namespace AzureModelRetrainer.Properties {
                 this["modelUpdateMinImprovement"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Scenario 1 When will a customer return [trained model]")]
+        public string endpointname {
+            get {
+                return ((string)(this["endpointname"]));
+            }
+            set {
+                this["endpointname"] = value;
+            }
+        }
     }
 }
