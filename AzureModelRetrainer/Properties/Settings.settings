@@ -1,0 +1,27 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="AzureModelRetrainer.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="mlretrainermodelurl" Type="System.String" Scope="User">
+      <Value Profile="(Default)">https://asiasoutheast.services.azureml.net/workspaces/e5fedc52e630461cb2ccb69bec93b57a/services/3d73f33953a84a1d9ac60a268dd0faed/jobs</Value>
+    </Setting>
+    <Setting Name="mlretrainerkey" Type="System.String" Scope="User">
+      <Value Profile="(Default)">vN2HV0EbeVxBI22OS4ETBrBQkIsc2KUiRRkxPrTe5Pe4Yix7MMpZYeW9hgGanytx6z6TDDKvtesZ1SlE1b3L2w==</Value>
+    </Setting>
+    <Setting Name="enpointurl" Type="System.String" Scope="User">
+      <Value Profile="(Default)">https://asiasoutheast.management.azureml.net/workspaces/e5fedc52e630461cb2ccb69bec93b57a/webservices/665f8f9660984667b54093022330dbad/endpoints/retrainendpoint</Value>
+    </Setting>
+    <Setting Name="endpointkey" Type="System.String" Scope="User">
+      <Value Profile="(Default)">1/ta/VQdZtmDx5oCIO394mbvhwk4bTTQqBVjr/0eb+LT6Mx7BFerYoLVwtkq6Zy4fwehEZup63RBcnagkV2Zcw==</Value>
+    </Setting>
+    <Setting Name="mlstoragename" Type="System.String" Scope="User">
+      <Value Profile="(Default)">monacohfstrg</Value>
+    </Setting>
+    <Setting Name="mlstoragekey" Type="System.String" Scope="User">
+      <Value Profile="(Default)">ycdJtEC3xuxe3mvEq+a7PlinXHKxFLbHc769VMQ7d3FOXD/Z9PaVTlrol7jG4jERPtoVSsE9JC68A2w/PIt64A==</Value>
+    </Setting>
+    <Setting Name="mlstoragecontainer" Type="System.String" Scope="User">
+      <Value Profile="(Default)">mlretraincontainer</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>
