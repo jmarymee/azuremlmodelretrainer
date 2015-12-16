@@ -112,6 +112,28 @@ namespace MLRetrainerLib
             return jobId;
         }
 
+        public async Task<BatchScoreStatusCode> CheckJobStatus(string jobId)
+        {
+            BatchScoreStatus status;
+
+            using (HttpClient client = new HttpClient())
+            {
+                // Check the job
+                string jobLocation = _mlretrainmodelurl + "/" + jobId + "?api-version=2.0";
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _mlretrainerkey);
+
+                HttpResponseMessage response = await client.GetAsync(jobLocation);
+                if (!response.IsSuccessStatusCode)
+                {
+                    return BatchScoreStatusCode.Cancelled;
+                }
+
+                status = await response.Content.ReadAsAsync<BatchScoreStatus>();
+            }
+
+            return status.StatusCode;
+        }
+
         //used to begin the retraining. This will need a callback in order to know when we're done and to get the precision results
         public async Task StartRetrainingJob(string jobId)
         {
@@ -137,7 +159,7 @@ namespace MLRetrainerLib
         /// <param name="sasBlobtoken"></param>
         /// <param name="connStr"></param>
         /// <returns></returns>
-        public async Task UpdateRetrainedModel(string baseLoc, string relLoc, string sasBlobtoken, string connStr)
+        public async Task<bool> UpdateRetrainedModel(string baseLoc, string relLoc, string sasBlobtoken, string connStr)
         {
             //string apiKey = "DUQquqfOk7Sk21g3K/YigqSdwM7Z4xbs2EYrEXDHNUjiZHLRtKUK72RgCfYIwiLYQJWSB5y7Lp0apfu0tIJnnQ=="; //Trained Model API
             //string apiKey = "Y5kjC3KiFTSn6eg08eCX4SpbgZd6X6Fv2zP5Oa0kIeAH4tKAMKLRBUvlcIqy+05I3DlL0vs2CqUK3NJwIfkn8A=="; //Endpoint API
@@ -148,7 +170,7 @@ namespace MLRetrainerLib
                 Resources = new ResourceLocation[] {
                     new ResourceLocation()
                     {
-                        Name = "Census Model [trained model]",
+                        Name = "Scenario 1 When will a customer return [trained model]",
                         Location = new AzureBlobDataReference()
                         {
                             BaseLocation = baseLoc,
@@ -166,7 +188,44 @@ namespace MLRetrainerLib
                 {
                     request.Content = new StringContent(JsonConvert.SerializeObject(resourceLocations), System.Text.Encoding.UTF8, "application/json");
                     HttpResponseMessage response = await client.SendAsync(request);
+                    if (response.IsSuccessStatusCode) { return true;  }
+                    else { return false; }
                 }
+            }
+        }
+
+        /// <summary>
+        /// Used to update the 
+        /// </summary>
+        /// <param name="jobId"></param>
+        /// <returns></returns>
+        public async Task<Boolean> UpdateModel(string jobId)
+        {
+            BatchScoreStatus status;
+
+            try
+            {
+                using (HttpClient client = new HttpClient())
+                {
+                    // Check the job
+                    string jobLocation = _mlretrainmodelurl + "/" + jobId + "?api-version=2.0";
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _mlretrainerkey);
+
+                    HttpResponseMessage response = await client.GetAsync(jobLocation);
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        return false;
+                    }
+
+                    status = await response.Content.ReadAsAsync<BatchScoreStatus>();
+                }
+
+                AzureBlobDataReference res = status.Results["output2"];
+                return await UpdateRetrainedModel(res.BaseLocation, res.RelativeLocation, res.SasBlobToken, _storgaeConnectionString);
+            }
+            catch
+            {
+                return false;
             }
         }
 

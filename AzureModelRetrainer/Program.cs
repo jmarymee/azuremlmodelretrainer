@@ -32,6 +32,24 @@ namespace AzureModelRetrainer
             string jobID = retrainer.UploadRetrainingAsync().Result;
 
             retrainer.StartRetrainingJob(jobID).Wait();
+
+            MLRetrainerLib.BatchScoreStatusCode status;
+
+            do
+            {
+                status = retrainer.CheckJobStatus(jobID).Result;
+                Console.WriteLine(status.ToString());
+            } while (!(status == MLRetrainerLib.BatchScoreStatusCode.Finished));
+
+            bool isUpdated = retrainer.UpdateModel(jobID).Result;
+            if (isUpdated)
+            {
+                Console.WriteLine("Successful model retraining and endpoint deployment");
+            }
+            else
+            {
+                Console.WriteLine("Something went wrong updating the model");
+            }
         }
     }
 }
