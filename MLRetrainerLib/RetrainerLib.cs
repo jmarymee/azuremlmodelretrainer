@@ -9,6 +9,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace MLRetrainerLib
@@ -29,6 +30,8 @@ namespace MLRetrainerLib
         public string _nameOfEndpoint { get; set; } //used to push an updated model to the web endpoint
 
         private string _storgaeConnectionString;
+
+        public string sqlQueryForRetraining { get; set; }
 
         private CloudBlockBlob _trainingBlob;
 
@@ -57,6 +60,8 @@ namespace MLRetrainerLib
             _storgaeConnectionString = string.Format("DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1}", _mlstoragename, _mlstoragekey);
 
             lastScores = GetRetrainedResults(); //Set this for retraining so we can compare updated model score
+
+            sqlQueryForRetraining = GetSQLQueryFromAzureBlob(); //Set the default SQL Query in case we don't update
         }
 
         /// <summary>
@@ -105,6 +110,7 @@ namespace MLRetrainerLib
                     },
                 GlobalParameters = new Dictionary<string, string>()
                 {
+                    { "Database query", sqlQueryForRetraining }
                 }
             };
 
@@ -297,6 +303,56 @@ namespace MLRetrainerLib
             }
         }
 
+        /// <summary>
+        /// Used to initially upload a SQL query used for model retraining. We can programmtically send it to the model retrainer and ovverride the default
+        /// </summary>
+        /// <param name="filePath"></param>
+        public void StoreQueryInBlob(string filePath)
+        {
+            string conn = _storgaeConnectionString;
+
+            try
+            {
+                var blobClient = CloudStorageAccount.Parse(conn).CreateCloudBlobClient();
+                var container = blobClient.GetContainerReference(_mlstoragecontainer);
+                CloudBlockBlob blob = container.GetBlockBlobReference("sqlquery.sql");
+
+                using (var fileStream = System.IO.File.OpenRead(filePath))
+                {
+                    blob.UploadFromStream(fileStream);
+                }
+            }
+            catch (Exception)
+            {
+
+            }
+        }
+
+        public string GetSQLQueryFromAzureBlob()
+        {
+            string conn = _storgaeConnectionString;
+            Dictionary<string, Double> vals = null;
+            try
+            {
+                var blobClient = CloudStorageAccount.Parse(conn).CreateCloudBlobClient();
+                var container = blobClient.GetContainerReference(_mlstoragecontainer);
+                //container.CreateIfNotExists();
+                var blob = container.GetBlockBlobReference("sqlquery.sql");
+                if (!blob.Exists()) { return null; }
+                //blob.DownloadToFile(@"c:\drops\results.csv", FileMode.OpenOrCreate);
+
+                MemoryStream mStream = new MemoryStream();
+                blob.DownloadToStream(mStream);
+
+                string decoded = Encoding.UTF8.GetString(mStream.ToArray());;
+
+                return decoded;
+            }
+            catch
+            {
+                return null;
+            }
+        }
 
         /// <summary>
         /// This method retrives the results of the last model retraining. If there are no existing results (it has never run) then it will return null
@@ -373,6 +429,17 @@ namespace MLRetrainerLib
             if (newCompareScore >= improvement) { isImproved = true; }
 
             return isImproved;
+        }
+
+        public void UpdateSQLQueryForNewDate(string newDate)
+        {
+            Regex rgx = new Regex(@"\d{4}\-\d{2}-\d{2}");
+            if (!rgx.IsMatch(newDate))
+            {
+                return; //Not a valid date
+            }
+            string result = rgx.Replace(sqlQueryForRetraining, newDate);
+            sqlQueryForRetraining = result;
         }
     }
 

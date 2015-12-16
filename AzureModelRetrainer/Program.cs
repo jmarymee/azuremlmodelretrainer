@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace AzureModelRetrainer
@@ -10,14 +11,6 @@ namespace AzureModelRetrainer
     {
         static void Main(string[] args)
         {
-            //_mlretrainmodelurl = configs[0];
-            //_mlretrainerkey = configs[1];
-            //_endpointurl = configs[2];
-            //_endpointkey = configs[3];
-            //_mlstoragename = configs[4];
-            //_mlstoragekey = configs[5];
-            //_mlstoragecontainer = configs[6];
-
             List<string> paramList = new List<string>();
             paramList.Add(Properties.Settings.Default.mlretrainermodelurl);
             paramList.Add(Properties.Settings.Default.mlretrainerkey);
@@ -28,7 +21,15 @@ namespace AzureModelRetrainer
             paramList.Add(Properties.Settings.Default.mlstoragecontainer);
             paramList.Add(Properties.Settings.Default.endpointname);
 
+
             MLRetrainerLib.RetrainerLib retrainer = new MLRetrainerLib.RetrainerLib(paramList.ToArray());
+
+            //retrainer.StoreQueryInBlob(@"c:\users\jmarymee\Scenario1Query.sql");
+            //string query = retrainer.GetSQLQueryFromAzureBlob();
+            //Regex rgx = new Regex(@"\d{4}\-\d{2}-\d{2}");
+            //string result = rgx.Replace(query, "2015-10-02");
+
+            retrainer.UpdateSQLQueryForNewDate("2015-10-01");
 
             Console.WriteLine("Results of last training: ");
             foreach(var val in retrainer.lastScores)
@@ -48,13 +49,18 @@ namespace AzureModelRetrainer
                 Console.WriteLine(status.ToString());
             } while (!(status == MLRetrainerLib.BatchScoreStatusCode.Finished));
 
+            Console.WriteLine("New Scores for retraining...");
             Dictionary<string, double> scores = retrainer.GetRetrainedResults();
+            foreach (var val in scores)
+            {
+                Console.WriteLine("Rating Name: {0} : Value: {1}", val.Key, val.Value.ToString());
+            }
 
-            if (!retrainer.isUdpateModel("AUC", -0.02f))
+            if (!retrainer.isUdpateModel("AUC", 0.02f))
             {
                 Console.WriteLine("No need to update endpoint. Accuracy has not improved. Press a key to end");
                 Console.ReadLine();
-                return;
+                //return;
             }
 
             bool isUpdated = retrainer.UpdateModel(jobID).Result;
