@@ -51,16 +51,16 @@ namespace MLRetrainerLib
         /// mlretrainerurl : mlrertainerkey : pubendpointurl : pubendpointkey : mlstoragename : mlstoragecontainer : pubendpointname
         /// </summary>
         /// <param name="configs"></param>
-        public RetrainerLib(params string[] configs)
+        public RetrainerLib(MLRetrainConfig configobj)
         {
-            _mlretrainmodelurl   = configs[0];
-            _mlretrainerkey      = configs[1];
-            _endpointurl         = configs[2];
-            _endpointkey         = configs[3];
-            _mlstoragename       = configs[4];
-            _mlstoragekey        = configs[5];
-            _mlstoragecontainer  = configs[6];
-            _nameOfEndpoint       = configs[7];
+            _mlretrainmodelurl = configobj.mlretrainerurl;
+            _mlretrainerkey = configobj.mlretrainerkey;
+            _endpointurl = configobj.publishendpointurl;
+            _endpointkey = configobj.publishendpointkey;
+            _mlstoragename = configobj.mlretrainerstoragename;
+            _mlstoragekey = configobj.mlretrainerstoragekey;
+            _mlstoragecontainer = configobj.mlretrainercontainername;
+            _nameOfEndpoint = configobj.publishendpointname;
 
             //This is used as the general URL for accessing the Azure Storage blobs where the updated iLearner and result scores are stored
             _storgaeConnectionString = string.Format("DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1}", _mlstoragename, _mlstoragekey);
@@ -457,6 +457,21 @@ namespace MLRetrainerLib
             }
             string result = rgx.Replace(sqlQueryForRetraining, newDate);
             sqlQueryForRetraining = result;
+        }
+
+        /// <summary>
+        /// This class is used to send the config array to the constructor of the ML Retrainer Library
+        /// </summary>
+        public class MLRetrainConfig
+        {
+            public string mlretrainerurl { get; set; }
+            public string mlretrainerkey { get; set; }
+            public string publishendpointurl { get; set; }
+            public string publishendpointkey { get; set; }
+            public string publishendpointname { get; set; }
+            public string mlretrainerstoragename { get; set; }
+            public string mlretrainerstoragekey { get; set; }
+            public string mlretrainercontainername { get; set; }
         }
     }
 

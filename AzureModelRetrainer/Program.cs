@@ -11,18 +11,17 @@ namespace AzureModelRetrainer
     {
         static void Main(string[] args)
         {
-            List<string> paramList = new List<string>();
-            paramList.Add(Properties.Settings.Default.mlretrainermodelurl);
-            paramList.Add(Properties.Settings.Default.mlretrainerkey);
-            paramList.Add(Properties.Settings.Default.enpointurl);
-            paramList.Add(Properties.Settings.Default.endpointkey);
-            paramList.Add(Properties.Settings.Default.mlstoragename);
-            paramList.Add(Properties.Settings.Default.mlstoragekey);
-            paramList.Add(Properties.Settings.Default.mlstoragecontainer);
-            paramList.Add(Properties.Settings.Default.endpointname);
+            MLRetrainerLib.RetrainerLib.MLRetrainConfig configobj = new MLRetrainerLib.RetrainerLib.MLRetrainConfig();
+            configobj.mlretrainerurl = Properties.Settings.Default.mlretrainermodelurl;
+            configobj.mlretrainerkey = Properties.Settings.Default.mlretrainerkey;
+            configobj.publishendpointurl = Properties.Settings.Default.enpointurl;
+            configobj.publishendpointkey = Properties.Settings.Default.endpointkey;
+            configobj.mlretrainerstoragename = Properties.Settings.Default.mlstoragename;
+            configobj.mlretrainerstoragekey = Properties.Settings.Default.mlstoragekey;
+            configobj.mlretrainercontainername = Properties.Settings.Default.mlstoragecontainer;
+            configobj.publishendpointname = Properties.Settings.Default.endpointname;
 
-
-            MLRetrainerLib.RetrainerLib retrainer = new MLRetrainerLib.RetrainerLib(paramList.ToArray());
+            MLRetrainerLib.RetrainerLib retrainer = new MLRetrainerLib.RetrainerLib(configobj);
 
 
             retrainer.UpdateSQLQueryForNewDate("2015-10-01");
