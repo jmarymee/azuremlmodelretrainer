@@ -33,6 +33,14 @@ namespace MLRetrainerLib
 
         public string sqlQueryForRetraining { get; set; }
 
+        private string _currentModelTraining;
+        public string CurrentModelTrainingName
+        {
+            get { return _currentModelTraining;  }
+        }
+
+        private string retrainerPrefix = "retrainer-";
+
         private CloudBlockBlob _trainingBlob;
 
         /// <summary>
@@ -65,7 +73,7 @@ namespace MLRetrainerLib
             //This is used as the general URL for accessing the Azure Storage blobs where the updated iLearner and result scores are stored
             _storgaeConnectionString = string.Format("DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1}", _mlstoragename, _mlstoragekey);
 
-            lastScores = GetRetrainedResults(); //Set this for retraining so we can compare updated model score
+            lastScores = GetLatestRetrainedResults(); //Set this for retraining so we can compare updated model score
 
             sqlQueryForRetraining = GetSQLQueryFromAzureBlob(); //Set the default SQL Query in case we don't update
         }
@@ -73,6 +81,7 @@ namespace MLRetrainerLib
         /// <summary>
         /// Used to setup the job retraining. You nust receive the jobID from this call and submit to the start method. This method only gets retraining 
         /// ready but it MUST be started with the returned jobID after the sucessful completion of this call
+        /// This will submit the default SQL Query pulled from the ML Storage container and use it unless it was nodified with other LIB calls
         /// </summary>
         /// <returns>This is a jobID used to then start the retraining job</returns>
         public async Task<string> QueueRetrainingAsync()
@@ -83,6 +92,7 @@ namespace MLRetrainerLib
 
             string jobId = null;
 
+            _currentModelTraining = retrainerPrefix +  DateTime.Now.ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
 
             BatchExecutionRequest request = new BatchExecutionRequest()
             {
@@ -101,7 +111,8 @@ namespace MLRetrainerLib
                             new AzureBlobDataReference()
                             {
                                 ConnectionString = _storgaeConnectionString,
-                                RelativeLocation = string.Format("/{0}/output2results.ilearner", _mlstoragecontainer)
+                                //RelativeLocation = string.Format("/{0}/output2results.ilearner", _mlstoragecontainer)
+                                RelativeLocation = string.Format("/{0}/{1}.ilearner", _mlstoragecontainer, _currentModelTraining)
                             }
                         },
                         {
@@ -109,8 +120,8 @@ namespace MLRetrainerLib
                             new AzureBlobDataReference()
                             {
                                 ConnectionString = _storgaeConnectionString,
-                                //RelativeLocation = string.Format("/{0}/output1results.csv", StorageContainerName)
-                                RelativeLocation = string.Format("/{0}/output1results.csv", _mlstoragecontainer)
+                                //RelativeLocation = string.Format("/{0}/output1results.csv", _mlstoragecontainer)
+                                RelativeLocation = string.Format("/{0}/{1}.csv", _mlstoragecontainer, _currentModelTraining)
                             }
                         },
                     },
@@ -202,10 +213,6 @@ namespace MLRetrainerLib
         /// <returns></returns>
         private async Task<bool> UpdateRetrainedModel(string baseLoc, string relLoc, string sasBlobtoken, string connStr)
         {
-            //string apiKey = "DUQquqfOk7Sk21g3K/YigqSdwM7Z4xbs2EYrEXDHNUjiZHLRtKUK72RgCfYIwiLYQJWSB5y7Lp0apfu0tIJnnQ=="; //Trained Model API
-            //string apiKey = "Y5kjC3KiFTSn6eg08eCX4SpbgZd6X6Fv2zP5Oa0kIeAH4tKAMKLRBUvlcIqy+05I3DlL0vs2CqUK3NJwIfkn8A=="; //Endpoint API
-            //string endPointURL = "https://management.azureml.net/workspaces/1e9859bf8e4d4861abf92463f2b0554a/webservices/779da01f4b3c4029bba5b5e2c7b9ed78/endpoints/rtep";
-
             var resourceLocations = new ResourceLocations()
             {
                 Resources = new ResourceLocation[] {
@@ -365,11 +372,41 @@ namespace MLRetrainerLib
             }
         }
 
+        public List<Dictionary<string, double>> GetAllStoredResults()
+        {
+            List<Dictionary<string, double>> resList = new List<Dictionary<string, double>>();
+
+            string conn = _storgaeConnectionString;
+
+            try
+            {
+                var blobClient = CloudStorageAccount.Parse(conn).CreateCloudBlobClient();
+                var container = blobClient.GetContainerReference(_mlstoragecontainer);
+                //container.CreateIfNotExists();
+                var retrainerList = container.ListBlobs(retrainerPrefix, true);
+                var res = from b in retrainerList
+                          where b.StorageUri.PrimaryUri.AbsoluteUri.EndsWith(".csv")
+                          orderby b.StorageUri.PrimaryUri.AbsoluteUri descending
+                          select b;
+                foreach(CloudBlockBlob blob in res)
+                {
+                    resList.Add(GetTrainingResultsFromBlob(blob));
+                }
+            }
+            catch
+            {
+                return null;
+            }
+
+
+            return resList;
+        }
+
         /// <summary>
         /// This method retrives the results of the last model retraining. If there are no existing results (it has never run) then it will return null
         /// </summary>
-        /// <returns></returns>
-        public Dictionary<string, double> GetRetrainedResults()
+        /// <returns>A filled in Dictionary of model metrics. If none was stored then a single entry with 'nometrics' as the only key</returns>
+        public Dictionary<string, double> GetLatestRetrainedResults()
         {
             string conn = _storgaeConnectionString;
             Dictionary<string, Double> vals = null;
@@ -378,17 +415,15 @@ namespace MLRetrainerLib
                 var blobClient = CloudStorageAccount.Parse(conn).CreateCloudBlobClient();
                 var container = blobClient.GetContainerReference(_mlstoragecontainer);
                 //container.CreateIfNotExists();
-                var blob = container.GetBlockBlobReference("output1results.csv");
-                if (!blob.Exists()) { return null;  }
-                //blob.DownloadToFile(@"c:\drops\results.csv", FileMode.OpenOrCreate);
+                var retrainerList = container.ListBlobs(retrainerPrefix, true);
+                var res = from b in retrainerList
+                          where b.StorageUri.PrimaryUri.AbsoluteUri.EndsWith(".csv")
+                          orderby b.StorageUri.PrimaryUri.AbsoluteUri descending
+                          select b;
 
-                MemoryStream mStream = new MemoryStream();
-                blob.DownloadToStream(mStream);
+                CloudBlockBlob blob = (CloudBlockBlob)res.FirstOrDefault();
 
-                string decoded = Encoding.UTF8.GetString(mStream.ToArray());
-
-                vals = ExtractModelValues(decoded);
-                retrainedScores = vals;
+                vals = GetTrainingResultsFromBlob(blob);
 
                 return vals;
             }
@@ -396,6 +431,32 @@ namespace MLRetrainerLib
             {
                 return null;
             }
+        }
+
+        /// <summary>
+        /// This method retrives the scoring results from the blob and parses into a Dictionary
+        /// </summary>
+        /// <param name="blob"></param>
+        /// <returns></returns>
+        public Dictionary<string, double> GetTrainingResultsFromBlob(CloudBlockBlob blob)
+        {
+            Dictionary<string, double> results = null;
+
+            if (!blob.Exists())
+            {
+                results = new Dictionary<string, double>();
+                results.Add("nometrics", 0);
+                return results;
+            }
+
+            MemoryStream mStream = new MemoryStream();
+            blob.DownloadToStream(mStream);
+
+            string decoded = Encoding.UTF8.GetString(mStream.ToArray());
+
+            results = ExtractModelValues(decoded);
+
+            return results;
         }
 
         /// <summary>

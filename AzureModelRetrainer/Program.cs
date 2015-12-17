@@ -23,6 +23,8 @@ namespace AzureModelRetrainer
 
             MLRetrainerLib.RetrainerLib retrainer = new MLRetrainerLib.RetrainerLib(configobj);
 
+            var resList = retrainer.GetAllStoredResults();
+
 
             retrainer.UpdateSQLQueryForNewDate("2015-10-01");
 
@@ -45,7 +47,7 @@ namespace AzureModelRetrainer
             } while (!(status == MLRetrainerLib.BatchScoreStatusCode.Finished));
 
             Console.WriteLine("New Scores for retraining...");
-            Dictionary<string, double> scores = retrainer.GetRetrainedResults();
+            Dictionary<string, double> scores = retrainer.GetLatestRetrainedResults();
             foreach (var val in scores)
             {
                 Console.WriteLine("Rating Name: {0} : Value: {1}", val.Key, val.Value.ToString());
