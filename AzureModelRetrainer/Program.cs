@@ -24,10 +24,6 @@ namespace AzureModelRetrainer
 
             MLRetrainerLib.RetrainerLib retrainer = new MLRetrainerLib.RetrainerLib(paramList.ToArray());
 
-            //retrainer.StoreQueryInBlob(@"c:\users\jmarymee\Scenario1Query.sql");
-            //string query = retrainer.GetSQLQueryFromAzureBlob();
-            //Regex rgx = new Regex(@"\d{4}\-\d{2}-\d{2}");
-            //string result = rgx.Replace(query, "2015-10-02");
 
             retrainer.UpdateSQLQueryForNewDate("2015-10-01");
 

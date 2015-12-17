@@ -45,6 +45,12 @@ namespace MLRetrainerLib
         /// </summary>
         public Dictionary<string, double> retrainedScores { get; set; }
 
+        /// <summary>
+        /// This is the constructor for the library. We lazily use a param list rather than specify parameters, but parameters might be a good revision.
+        /// Note: This means you must have the correct number of parameters AND they mus be in the correct order.
+        /// mlretrainerurl : mlrertainerkey : pubendpointurl : pubendpointkey : mlstoragename : mlstoragecontainer : pubendpointname
+        /// </summary>
+        /// <param name="configs"></param>
         public RetrainerLib(params string[] configs)
         {
             _mlretrainmodelurl   = configs[0];
@@ -231,7 +237,7 @@ namespace MLRetrainerLib
         }
 
         /// <summary>
-        /// Used to update the 
+        /// Used to update the retrained model. It first checks to ensure that the job completed successfuly.
         /// </summary>
         /// <param name="jobId"></param>
         /// <returns></returns>
@@ -304,7 +310,7 @@ namespace MLRetrainerLib
         }
 
         /// <summary>
-        /// Used to initially upload a SQL query used for model retraining. We can programmtically send it to the model retrainer and ovverride the default
+        /// Used to initially upload a SQL query used for model retraining. We can programmtically send it to the model retrainer and override the default
         /// </summary>
         /// <param name="filePath"></param>
         public void StoreQueryInBlob(string filePath)
@@ -327,7 +333,12 @@ namespace MLRetrainerLib
 
             }
         }
-
+        /// <summary>
+        /// This method can be used when kicking off a retrain when the experiment uses an Azure ML Reader supporting SQL. It allows you to modify the 
+        /// SQL query string and pass that in as a parameter for retraining. Other methods can support local training file upload, R etc. but this is dedicated to SQL. 
+        /// NOTE: There is also a supporting method for this call that does a REGEX date replace in the SQL query before it's sent up to Azure ML for retraining
+        /// </summary>
+        /// <returns></returns>
         public string GetSQLQueryFromAzureBlob()
         {
             string conn = _storgaeConnectionString;
@@ -387,7 +398,13 @@ namespace MLRetrainerLib
             }
         }
 
-        public Dictionary<string, Double> ExtractModelValues(string mvalues)
+        /// <summary>
+        /// This takes the downloaded file contents and parses them into a dictionary of scoring values. There are several so the implementer needs to decide which
+        /// ones they want to use for determining if the retrained model should be deployed or not. A default is usually AUC
+        /// </summary>
+        /// <param name="mvalues"></param>
+        /// <returns></returns>
+        private Dictionary<string, Double> ExtractModelValues(string mvalues)
         {
             Dictionary<string, Double> vals = new Dictionary<string, double>();
 
