@@ -372,6 +372,48 @@ namespace MLRetrainerLib
             }
         }
 
+        /// <summary>
+        /// This method will delete all iLearners (trained modesl) and results files (*.csv) in the specificed Azure Blob Storage Container
+        /// If you want to clean out all previous runs of the retrainer, this is how you clean it. It does not remove scracth files or the stored SQL query
+        /// </summary>
+        public void DeleteAllStoredResultsAndLearners()
+        {
+            List<CloudBlockBlob> blobList = new List<CloudBlockBlob>();
+
+            string conn = _storgaeConnectionString;
+
+            try
+            {
+                var blobClient = CloudStorageAccount.Parse(conn).CreateCloudBlobClient();
+                var container = blobClient.GetContainerReference(_mlstoragecontainer);
+                //container.CreateIfNotExists();
+                var retrainerList = container.ListBlobs(retrainerPrefix, true);
+                var res = from b in retrainerList
+                          where b.StorageUri.PrimaryUri.AbsoluteUri.EndsWith(".csv") || b.StorageUri.PrimaryUri.AbsoluteUri.EndsWith(".ilearner")
+                          select b;
+                foreach (CloudBlockBlob blob in res)
+                {
+                    blobList.Add(blob);
+                }
+
+                CloudBlockBlob[] cbArray = blobList.ToArray();
+                for (int loop=0; loop<cbArray.Length; loop++)
+                {
+                    cbArray[loop].Delete();
+                }
+            }
+            catch
+            {
+                return;
+            }
+
+        }
+
+        /// <summary>
+        /// This method will return a List of ALL trained model results files order in descending order. Thus you can use this call to help audit past 
+        /// model retraining sessions to ensure accuracy improvement
+        /// </summary>
+        /// <returns></returns>
         public List<Dictionary<string, double>> GetAllStoredResults()
         {
             List<Dictionary<string, double>> resList = new List<Dictionary<string, double>>();
